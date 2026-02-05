@@ -1,29 +1,11 @@
 {
-  "short_name": "Ramzan 2026",
-  "name": "Ramzan Schedule 2026 - Nagpur",
+  "short_name": "Nagpur Ramzan",
+  "name": "Ramzan Schedule 2026",
   "icons": [
-    {
-      "src": "icon.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png" }
   ],
-  "start_url": ".",
+  "start_url": "./index.html",
   "display": "standalone",
   "theme_color": "#929581",
-  "background_color": "#f4f4f1",
-  "orientation": "portrait",
-  "shortcuts": [
-    {
-      "name": "Today's Timing",
-      "url": "/",
-      "icons": [{ "src": "icon.png", "sizes": "192x192" }]
-    }
-  ]
+  "background_color": "#f4f4f1"
 }
