@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ramzan Nagpur 2026</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg-olive: #929581;
+            --card-bg: #f4f4f1;
+            --accent-yellow: #ffcc00;
+            --text-dark: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-olive);
+            color: var(--text-dark);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 400px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            border: 4px solid white;
+        }
+
+        h1 { margin: 0; font-size: 1.2rem; color: #555; }
+        .date-display { font-weight: bold; margin-bottom: 20px; color: #777; }
+        
+        .ramzan-day {
+            font-size: 3rem;
+            font-weight: 900;
+            margin: 10px 0;
+            color: var(--text-dark);
+        }
+
+        .time-box {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .time-item {
+            flex: 1;
+        }
+
+        .time-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+        }
+
+        .time-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--text-dark);
+        }
+
+        .btn-notify {
+            margin-top: 30px;
+            background: var(--bg-olive);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-notify:active { transform: scale(0.95); }
+
+        .footer-note {
+            margin-top: 15px;
+            font-size: 0.7rem;
+            color: #888;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Ramzan ul Mubarak 2026</h1>
+        <div id="current-date" class="date-display">---</div>
+        
+        <div class="time-label">RAMZAN DAY</div>
+        <div id="ramzan-day" class="ramzan-day">--</div>
+
+        <div class="time-box">
+            <div class="time-item">
+                <div class="time-label">Sahar</div>
+                <div id="sahar-time" class="time-value">--:--</div>
+            </div>
+            <div class="time-item">
+                <div class="time-label">Iftar</div>
+                <div id="iftar-time" class="time-value">--:--</div>
+            </div>
+        </div>
+
+        <button class="btn-notify" onclick="enableNotifications()">Pin Daily Notification</button>
+        
+        <div class="footer-note">
+            Note: Adjusted with -5m Sahar & +3m Iftar safety margin.
+        </div>
+    </div>
+
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        async function updateUI() {
+            const response = await fetch('schedule.json');
+            const schedule = await response.json();
+            
+            // Get local date in YYYY-MM-DD format
+            const today = new Date().toLocaleDateString('en-CA'); 
+            const data = schedule.find(item => item.date === today);
+
+            if (data) {
+                document.getElementById('ramzan-day').innerText = data.day;
+                document.getElementById('sahar-time').innerText = data.sahar;
+                document.getElementById('iftar-time').innerText = data.iftar;
+                document.getElementById('current-date').innerText = new Date().toDateString();
+
+                // Automatically update notification if permission exists
+                if (Notification.permission === 'granted') {
+                    sendToServiceWorker(data);
+                }
+            } else {
+                document.getElementById('ramzan-day').innerText = "Off";
+                document.getElementById('current-date').innerText = "Ramzan hasn't started yet.";
+            }
+        }
+
+        async function enableNotifications() {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                updateUI();
+                alert("Notification enabled! It will stay in your tray daily.");
+            }
+        }
+
+        function sendToServiceWorker(payload) {
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'UPDATE_NOTIFICATION',
+                    payload: payload
+                });
+            }
+        }
+
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
