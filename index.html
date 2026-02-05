@@ -6,80 +6,112 @@
     <title>Ramzan Nagpur 2026</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        :root { --bg-olive: #929581; --card-bg: #f4f4f1; --accent-yellow: #ffcc00; --text-dark: #333; }
-        body { font-family: sans-serif; background-color: var(--bg-olive); color: var(--text-dark); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; }
-        .container { width: 90%; max-width: 400px; background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 4px solid white; }
-        .time-box { display: flex; justify-content: space-around; margin: 20px 0; }
-        .time-value { font-size: 1.8rem; font-weight: bold; }
-        .btn-notify { background: var(--bg-olive); color: white; border: none; padding: 15px 25px; border-radius: 50px; font-weight: bold; cursor: pointer; width: 100%; }
-        #status { margin-top: 15px; font-size: 0.8rem; color: #666; background: #eee; padding: 5px; border-radius: 5px; }
+        :root { --bg-olive: #929581; --card-bg: #f4f4f1; --accent: #ffcc00; --text: #333; }
+        body { background-color: var(--bg-olive); color: var(--text); font-family: sans-serif; margin: 0; padding: 10px; }
+        
+        .header { text-align: center; color: white; margin-bottom: 15px; }
+        .header h1 { margin: 0; font-size: 1.4rem; }
+        .header p { margin: 5px 0; font-size: 0.9rem; opacity: 0.9; }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 10px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .day-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.5);
+            position: relative;
+        }
+
+        .day-card.today { border: 3px solid var(--accent); box-shadow: 0 0 10px var(--accent); }
+        
+        .day-num { font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #ddd; margin-bottom: 5px; }
+        .date-label { font-size: 0.7rem; color: #666; display: block; }
+        
+        .time-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-top: 5px; }
+        .time-val { font-weight: bold; color: #000; }
+        
+        .status-bar { 
+            position: sticky; bottom: 0; background: white; padding: 10px; 
+            border-radius: 10px; margin-top: 20px; font-size: 0.8rem; text-align: center;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Ramzan Nagpur 2026</h2>
-        <div id="ramzan-day" style="font-size: 3rem; font-weight: 900;">--</div>
-        <div class="time-box">
-            <div><div>Sahar</div><div id="sahar-time" class="time-value">--:--</div></div>
-            <div><div>Iftar</div><div id="iftar-time" class="time-value">--:--</div></div>
+
+    <div class="header">
+        <h1>Ramzan ul Mubarak 2026</h1>
+        <p>Nagpur Schedule (Safe Timings)</p>
+    </div>
+
+    <div id="schedule-grid" class="grid-container">
         </div>
-        <button class="btn-notify" onclick="enableNotifications()">Pin Daily Notification</button>
-        <div id="status">System: Ready</div>
+
+    <div id="status-bar" class="status-bar">
+        Checking for today's timings...
     </div>
 
     <script>
-        const statusDiv = document.getElementById('status');
-        
-        // Register SW with better error catching
+        // Register Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => statusDiv.innerText = "Status: App Registered")
-                .catch(err => statusDiv.innerText = "SW Error: " + err);
+            navigator.serviceWorker.register('sw.js').then(reg => reg.update());
         }
 
-        async function updateUI() {
-            try {
-                const response = await fetch('schedule.json');
-                const schedule = await response.json();
-                const today = new Date().toLocaleDateString('en-CA'); 
-                const data = schedule.find(item => item.date === today);
+        async function initApp() {
+            const resp = await fetch('schedule.json');
+            const schedule = await resp.json();
+            const today = new Date().toLocaleDateString('en-CA');
+            const grid = document.getElementById('schedule-grid');
+            const statusBar = document.getElementById('status-bar');
 
-                if (data) {
-                    document.getElementById('ramzan-day').innerText = data.day;
-                    document.getElementById('sahar-time').innerText = data.sahar;
-                    document.getElementById('iftar-time').innerText = data.iftar;
-                    return data;
-                } else {
-                    document.getElementById('ramzan-day').innerText = "Off";
-                    statusDiv.innerText = "Status: Not in Ramzan Period";
+            grid.innerHTML = ''; // Clear
+
+            schedule.forEach(item => {
+                const isToday = item.date === today;
+                const card = document.createElement('div');
+                card.className = `day-card ${isToday ? 'today' : ''}`;
+                
+                // Format date for display (e.g., "19 Feb")
+                const d = new Date(item.date);
+                const dateShort = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+
+                card.innerHTML = `
+                    <span class="date-label">${dateShort}</span>
+                    <div class="day-num">${item.day} <small style="font-size:0.6rem">RAMZAN</small></div>
+                    <div class="time-row"><span>Sahar:</span> <span class="time-val">${item.sahar}</span></div>
+                    <div class="time-row"><span>Iftar:</span> <span class="time-val">${item.iftar}</span></div>
+                `;
+                grid.appendChild(card);
+
+                if (isToday) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    updateNotification(item);
+                    statusBar.innerText = `Today: Sahar ${item.sahar} | Iftar ${item.iftar}`;
                 }
-            } catch (e) { statusDiv.innerText = "Data Error: " + e; }
+            });
         }
 
-        async function enableNotifications() {
-            statusDiv.innerText = "Requesting permission...";
-            
-            if (!('Notification' in window)) {
-                alert("Notifications not supported in this browser.");
-                return;
-            }
-
+        async function updateNotification(data) {
             const permission = await Notification.requestPermission();
-            statusDiv.innerText = "Permission: " + permission;
-
-            if (permission === 'granted') {
-                const data = await updateUI();
-                if (data) {
-                    // Force the Service Worker to show the notification
-                    const reg = await navigator.serviceWorker.ready;
-                    reg.active.postMessage({ type: 'UPDATE_NOTIFICATION', payload: data });
-                }
-            } else if (permission === 'denied') {
-                alert("Please click the Lock icon in your browser URL bar and Reset Permissions.");
+            if (permission === 'granted' && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'UPDATE_NOTIFICATION',
+                    payload: data
+                });
+            } else if (permission === 'default') {
+                statusBar.innerText = "Tap here to enable daily pinned times.";
+                statusBar.onclick = () => updateNotification(data);
             }
         }
 
-        window.onload = updateUI;
+        window.onload = initApp;
     </script>
 </body>
 </html>
